@@ -59,7 +59,7 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: "/(.*)", // Apply headers to all routes
+        source: "/(.*)", 
         headers: securityHeaders,
       },
     ];
