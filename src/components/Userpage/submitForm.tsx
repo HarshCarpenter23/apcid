@@ -19,6 +19,7 @@ export const FormSubmit = ({
   const [submitstatus, setSubmitStatus] = useState(false);
   const [submittedData, setSubmittedData] = useState<any>(null);
   const [showPopup, setShowPopup] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false); // New state for success popup
 
   useEffect(() => {
     if (!session) return;
@@ -148,14 +149,21 @@ export const FormSubmit = ({
       setMessage("Submitted Successfully!");
       setShowPopup(false);
 
-      // ✅ Sign out user after download
-      await signOut(); // No callbackUrl = default NextAuth sign-out
+      // Show success confirmation popup before signing out
+      setShowSuccessPopup(true);
     } catch (error: any) {
       console.error("Error during final submission:", error);
       setMessage(`Error: ${error.message}`);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle success confirmation and sign out
+  const handleSuccessConfirmation = async () => {
+    setShowSuccessPopup(false);
+    // Sign out user after confirmation
+    await signOut(); // No callbackUrl = default NextAuth sign-out
   };
 
   const getFileIcon = (type: string) => {
@@ -235,6 +243,38 @@ export const FormSubmit = ({
           setMessage={setMessage} 
           setSubmitStatus={handleTextSubmissionComplete} // Pass the modified callback
         />
+      )}
+
+      {/* Success Confirmation Popup */}
+      {showSuccessPopup && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md relative overflow-hidden border border-gray-200">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-green-600 to-emerald-600 p-6 text-white relative">
+              <div className="flex items-center justify-center">
+                <div className="p-3 bg-white/20 rounded-full">
+                  <CheckCircle className="w-8 h-8" />
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-8 text-center">
+              <h3 className="text-2xl font-bold text-gray-800 mb-4">Test Completed!</h3>
+              <p className="text-gray-600 mb-8 text-lg">
+                You have successfully completed the test. Thank you for your submission.
+              </p>
+
+              {/* OK Button */}
+              <button
+                className="w-full py-4 px-6 rounded-xl font-semibold text-white bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-green-400 focus:ring-opacity-50 transform hover:scale-[1.02] active:scale-[0.98]"
+                onClick={handleSuccessConfirmation}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {showPopup && (
