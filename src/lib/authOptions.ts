@@ -2,9 +2,8 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaClient } from "@/generated/prisma/client";
 import bcrypt from "bcrypt";
-import { Console } from "console";
 
-// Extend types for session and JWT
+// ✅ Extend types
 declare module "next-auth" {
   interface Session {
     user: {
@@ -16,7 +15,7 @@ declare module "next-auth" {
       examroom?: string;
       examslot?: string;
       examdate?: string;
-      dob: string;
+      // ❌ dob removed here
     };
   }
 
@@ -95,10 +94,10 @@ export const authOptions: NextAuthOptions = {
               hallticket: true,
               role: true,
               examroom: true,
-              dob: true, 
+              dob: true,
               examslot: true,
               examdate: true,
-              isLoggedIn: true, // Include the new field
+              isLoggedIn: true,
             },
           });
 
@@ -106,9 +105,10 @@ export const authOptions: NextAuthOptions = {
             throw new Error("Invalid hall ticket number or date of birth.");
           }
 
-          // Check if user is already logged in
           if (user.isLoggedIn) {
-            throw new Error("Multiple login detected. This account is already logged in from another device/browser. Please contact the administrator if you believe this is an error.");
+            throw new Error(
+              "Multiple login detected. This account is already logged in from another device/browser. Please contact the administrator if you believe this is an error."
+            );
           }
 
           const [yyyy, mm, dd] = credentials.dob.split("-");
@@ -119,13 +119,12 @@ export const authOptions: NextAuthOptions = {
             throw new Error("Invalid hall ticket number or date of birth.");
           }
 
-          // Set user as logged in and update login details
           await prisma.user.update({
             where: { id: user.id },
             data: {
               logedInAt: new Date(),
               ipAddress: localIp,
-              isLoggedIn: true, // Set login status to true
+              isLoggedIn: true,
             },
           });
 
@@ -133,7 +132,7 @@ export const authOptions: NextAuthOptions = {
             id: user.id,
             name: user.name,
             hallticket: user.hallticket,
-            role: user.role as "ADMIN" | "USER" | "SUPER_ADMIN",
+            role: user.role,
             examroom: user.examroom,
             dob: user.dob,
             examdate: user.examdate,
@@ -141,9 +140,9 @@ export const authOptions: NextAuthOptions = {
           };
         } catch (error) {
           console.error("Error in authorize:", error);
-          throw error; // Re-throw the original error to preserve specific error messages
+          throw error;
         }
-      }
+      },
     }),
   ],
 
@@ -155,8 +154,8 @@ export const authOptions: NextAuthOptions = {
         token.hallticket = user.hallticket;
         token.role = user.role;
         token.examroom = user.examroom;
-        token.dob = user.dob;
-        token.exp = Math.floor(Date.now() / 1000) + 45 * 60; // JWT expiry
+        token.dob = user.dob; // ✅ Only in token (server-side)
+        token.exp = Math.floor(Date.now() / 1000) + 45 * 60;
         token.examdate = user.examdate;
         token.examslot = user.examslot;
       }
@@ -170,7 +169,6 @@ export const authOptions: NextAuthOptions = {
         session.user.hallticket = token.hallticket;
         session.user.role = token.role as "ADMIN" | "USER" | "SUPER_ADMIN";
         session.user.examroom = token.examroom;
-        session.user.dob = token.dob;
         session.user.exp = token.exp;
         session.user.examdate = token.examdate;
         session.user.examslot = token.examslot;
@@ -180,7 +178,6 @@ export const authOptions: NextAuthOptions = {
   },
 
   events: {
-    // Handle session end/expiry
     async signOut({ token }) {
       if (token?.id) {
         try {
